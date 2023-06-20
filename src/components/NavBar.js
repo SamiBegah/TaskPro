@@ -1,75 +1,94 @@
 import Logo from "../img/logo.png";
-import TodoList from "../img/todo-list.png";
-import Statistics from "../img/statistics.png";
-import Calendar from "../img/calendar.png";
-import Settings from "../img/settings.png";
+import Exit from "../img/exit.png";
+import { getAuth, signOut } from "firebase/auth";
 import { Link } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 function NavBar() {
+  const auth = getAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // DECONNEXION
+  const handleDeconnexion = async () => {
+    try {
+      await signOut(auth);
+      navigate("/");
+    } catch (error) {
+      console.error("Erreur de deconnexion: ", error);
+    }
+  };
+
   return (
-    <section className="rounded-tl-xl rounded-bl-xl w-32 bg-cyan-950 bg-opacity-95 flex flex-col justify-around items-center">
-      <div className="flex flex-col text-center gap-2 py-2">
+    <section className=" bg-blue-custom shadow-md p-4 rounded-xl mb-1 w-full bg-opacity-95 flex  justify-around px-10 items-center z-10">
+      <div className=" absolute left-5 w-1/12 ">
         <img
-          className="w-3/5 animate-spin self-center
-      "
+          className="w-8  self-center animate-spin"
           src={Logo}
           alt="TaskPro logo"
           style={{ animationDuration: "15000ms" }}
         />
-        {/*<a href="https://www.flaticon.com/free-icons/icosahedron" title="icosahedron icons">Icosahedron icons created by Freepik - Flaticon</a>*/}
-        <h1 className="text-lg text-white  font-Montserrat"> TaskPro</h1>
       </div>
-      <div className="h-1/6 w-full flex justify-center items-center">
+
+      <div className="h-full w-1/6 flex justify-center items-center">
         <Link
           to="/hub/todo"
-          className="flex justify-center w-3/5 h-3/6 bg-white  rounded-xl shadow-sm shadow-black"
+          className={`flex justify-center items-center px-2 py-1 rounded-xl shadow-sm transition-all duration-200 ${
+            location.pathname === "/hub/todo"
+              ? "bg-white text-black"
+              : "text-white"
+          }`}
         >
-          <img
-            className="w-3/5 self-center
-      "
-            src={TodoList}
-            alt="To-do list menu icon"
-          />
+          <span className="text-left"> Accueil </span>
         </Link>
       </div>
-      <div className="h-1/6 w-full flex justify-center items-center ">
+      <div className="h-full w-1/6 flex justify-center items-center ">
         <Link
           to="/hub/statistics"
-          className="flex justify-center w-3/5 h-3/6 bg-white  rounded-xl shadow-sm shadow-black"
+          className={`flex justify-center items-center px-2 py-1 rounded-xl shadow-sm transition-all duration-200 ${
+            location.pathname === "/hub/statistics"
+              ? "bg-white text-black"
+              : "text-white"
+          }`}
         >
-          <img
-            className="w-3/5 self-center
-      "
-            src={Statistics}
-            alt="Statistics menu icon"
-          />
+          <span className="text-left"> Statistiques </span>
         </Link>
       </div>
-      <div className="h-1/6 w-full flex justify-center items-center">
+      <div className="h-full w-1/6 flex justify-center items-center">
         <Link
           to="/hub/calendrier"
-          className="flex justify-center w-3/5 h-3/6 bg-white  rounded-xl shadow-sm shadow-black"
+          className={`flex justify-center items-center px-2 py-1 rounded-xl shadow-sm transition-all duration-200 ${
+            location.pathname === "/hub/calendrier"
+              ? "bg-white text-black"
+              : "text-white"
+          }`}
         >
-          <img
-            className="w-3/5 self-center
-      "
-            src={Calendar}
-            alt="Calendar menu icon"
-          />
+          <span className="text-left"> Calendrier </span>
         </Link>
       </div>
-      <div className="h-1/6 w-full flex justify-center items-center">
+      <div className="h-full w-1/6 flex justify-center items-center">
         <Link
           to="/hub/parametres"
-          className="flex justify-center w-3/5 h-3/6 bg-white  rounded-xl shadow-sm shadow-black"
+          className={`flex justify-center items-center px-2 py-1 rounded-xl shadow-sm transition-all duration-200 ${
+            location.pathname === "/hub/parametres"
+              ? "bg-white text-black"
+              : "text-white"
+          }`}
+        >
+          <span className="text-left"> Paramètres </span>
+        </Link>
+      </div>
+      <div className="h-full absolute right-2 flex justify-center items-center">
+        <button
+          className="flex justify-center  p-2 text-white  rounded-xl "
+          onClick={handleDeconnexion}
         >
           <img
-            className="w-3/5 self-center
-      "
-            src={Settings}
-            alt="Settings menu icon"
+            className="w-4/6 hover:w-5/6 transition-all duration-200 delay-50 ease-in-out"
+            src={Exit}
+            alt="Deconnexion"
           />
-        </Link>
+        </button>
       </div>
     </section>
   );

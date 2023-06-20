@@ -5,6 +5,9 @@ module.exports = {
   darkMode: false,
   theme: {
     extend: {
+      colors: {
+        "blue-custom": "#036BBF",
+      },
       fontFamily: {
         OpenSans: ["Open Sans", "sans-serif"],
         Montserrat: ["Montserrat", "sans-serif"],

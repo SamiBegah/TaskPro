@@ -1,8 +1,49 @@
 import { useState, useEffect } from "react";
-
+import xBtn from "../img/xBtn.png";
 import Timer from "./Timer";
 
-function SideBar() {
+function SideBar({
+  notifications,
+  setNotifications,
+  categories,
+  setCategories,
+  setSessions,
+  timerId,
+  db,
+  sessionActive,
+  setSessionActive,
+}) {
+  const [isTimerRunning, setIsTimerRunning] = useState(false);
+  const [activeTimer, setActiveTimer] = useState(null);
+
+  const startTimer = (timerId) => {
+    setActiveTimer(timerId);
+    setSessionActive(true);
+    setIsTimerRunning(true);
+  };
+
+  const endTimer = () => {
+    setActiveTimer(null);
+    setSessionActive(false);
+    setIsTimerRunning(false);
+  };
+
+  // GESTION DES NOTIFICATIONS
+  const deleteNotification = (notif) => {
+    setNotifications((prevNotifications) =>
+      prevNotifications.filter((thisNotification) => thisNotification !== notif)
+    );
+  };
+
+  const updateNotifications = (oldNotification, newNotification) => {
+    setNotifications((prevNotifications) =>
+      prevNotifications.map((notif) =>
+        notif === oldNotification ? newNotification : notif
+      )
+    );
+  };
+
+  // API METEO OPENWEATHERMAP
   const [weatherData, setWeatherData] = useState(null);
 
   const getWeatherData = async (latitude, longitude) => {
@@ -22,6 +63,7 @@ function SideBar() {
     setWeatherData({ ...data, icon, cityName });
   };
 
+  // Recuperer la localisation de l'utilisateur
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -30,38 +72,100 @@ function SideBar() {
           getWeatherData(latitude, longitude);
         },
         (error) => {
-          getWeatherData("New York");
+          getWeatherData("New York"); // localisation par default si utilisateur refuse de partager ses coordonnees
         }
       );
     }
   }, []);
 
   return (
-    <section className="w-44 bg-cyan-500 bg-opacity-20 py-5 p-3 rounded-r-xl flex flex-col items-center gap-5">
-      <h2>
-        Bienvenue <span className="font-bold">Nom</span>,
-      </h2>
-      <div className=" w-36 h-32 rounded-2xl bg-white shadow-xl flex flex-col items-center justify-center pt-2">
-        {weatherData && weatherData.main && weatherData.icon && (
-          <>
-            <h2 className="text-center">{weatherData.cityName}</h2>
-            <p className="text-sm"> {weatherData.main.temp} °C</p>
-            <img
-              className="w-16"
-              src={`http://openweathermap.org/img/w/${weatherData.icon}.png`}
-              alt="Weather Icon"
-            />
-          </>
-        )}
-      </div>
-      <div className="w-36 h-36 rounded-2xl bg-cyan-950 shadow-xl flex flex-col items-center py-3 text-white gap-3">
-        <h2>Tutoriel</h2>
-        <p className="text-sm">"Exemple de Tache"</p>
-        <form className="flex flex-col gap-2">
-          <div className="flex gap-2 justify-center">
-            <Timer categorie="" />
+    <section className="relative rounded-b-xl flex px-3">
+      <div className="flex h-24 ">
+        <div className="h-24 w-44 absolute right-3 rounded-2xl bg-white shadow-sm border border-slate-200 flex flex-col items-center justify-around p-1 gap-1">
+          <div className="flex p-2 ">
+            <div className="w-2/3">
+              <h2 className="text-center text-base">
+                {weatherData && weatherData.cityName}
+              </h2>
+              <p className="text-sm">
+                {" "}
+                {weatherData && weatherData.main && weatherData.main.temp} °C
+              </p>
+            </div>
+            {weatherData && weatherData.icon && (
+              <img
+                className=""
+                src={`http://openweathermap.org/img/w/${weatherData.icon}.png`}
+                alt="Weather Icon"
+              />
+            )}
           </div>
-        </form>
+        </div>
+
+        {/* Affichage des notifications */}
+        <ul className="flex flex-wrap gap-2 max-w-3/4">
+          {notifications.map((notif, index) => {
+            if (notif.type !== "timer") {
+              return (
+                <li
+                  key={index}
+                  className={`h-24 w-60 transition-all duration-200 ease-in-out rounded-2xl ${
+                    notif.color ? notif.color : "bg-white"
+                  } shadow-sm border border-slate-200 flex flex-col items-center justify-around p-1 gap-1`}
+                >
+                  <div className="relative flex justify-between items-center w-full h-full gap-2">
+                    <p className="text-center text-sm flex-grow">
+                      {notif.contenu}
+                    </p>
+                    <button
+                      className="shadow-xl"
+                      onClick={() => deleteNotification(notif)}
+                    >
+                      <img
+                        src={xBtn}
+                        alt="Delete button"
+                        className="absolute top-1 w-4 right-1 bg-white rounded-full opacity-25 hover:opacity-100"
+                      />
+                    </button>
+                  </div>
+                  {/* Option de retour en arriere */}
+                  {notif.undo && (
+                    <button
+                      className="flex justify-center items-center h-8 w-32 gap-2 bg-gradient rounded-full shadow-md text-white"
+                      onClick={() => {
+                        notif.undo();
+                        deleteNotification(notif);
+                      }}
+                    >
+                      Annuler
+                    </button>
+                  )}
+                </li>
+              );
+            } else {
+              return (
+                <Timer
+                  key={notif.id}
+                  notif={notif}
+                  notifications={notifications}
+                  setNotifications={setNotifications}
+                  categories={categories}
+                  setCategories={setCategories}
+                  deleteNotification={deleteNotification}
+                  setSessions={setSessions}
+                  xBtn={xBtn}
+                  db={db}
+                  startTimer={() => startTimer(notif.id)}
+                  endTimer={endTimer}
+                  isTimerRunning={isTimerRunning}
+                  setSessionActive={setSessionActive}
+                  sessionActive={sessionActive}
+                  updateNotifications={updateNotifications}
+                />
+              );
+            }
+          })}
+        </ul>
       </div>
     </section>
   );
