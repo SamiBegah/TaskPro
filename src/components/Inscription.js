@@ -28,29 +28,32 @@ function Inscription({ db, logo }) {
         email,
         password
       );
-
-      const inscriptionDate = new Date();
+      // Creation de l'utilisateur dans firebase
+      const inscriptionDate = new Date().toISOString();
       const userRef = doc(db, "users", userCredential.user.uid);
       await setDoc(userRef, {
+        userId: userCredential.user.uid,
         name,
         email,
         dateInscription: inscriptionDate,
+        weatherLocation: "Montreal",
       });
 
+      // Creation du blocnotes
       const notesCollectionRef = collection(db, "notes");
       await addDoc(notesCollectionRef, {
         note: "",
         userId: userCredential.user.uid,
       });
 
-      // Ajout des categories par default
+      // Ajout les categories par default
       const defaultCategories = [
         {
           nom: "Tutoriel",
           tempsEffectue: 0,
           tachesActives: 0,
           tachesCompletes: 0,
-          date: inscriptionDate.toLocaleDateString(),
+          date: inscriptionDate,
           color: "aliceblue",
         },
         {
@@ -58,7 +61,7 @@ function Inscription({ db, logo }) {
           tempsEffectue: 0,
           tachesActives: 0,
           tachesCompletes: 0,
-          date: inscriptionDate.toLocaleDateString(),
+          date: inscriptionDate,
           color: "fuchsia",
         },
         {
@@ -66,7 +69,7 @@ function Inscription({ db, logo }) {
           tempsEffectue: 0,
           tachesActives: 0,
           tachesCompletes: 0,
-          date: inscriptionDate.toLocaleDateString(),
+          date: inscriptionDate,
           color: "blue",
         },
         {
@@ -74,7 +77,7 @@ function Inscription({ db, logo }) {
           tempsEffectue: 0,
           tachesActives: 0,
           tachesCompletes: 0,
-          date: inscriptionDate.toLocaleDateString(),
+          date: inscriptionDate,
           color: "aquamarine",
         },
         {
@@ -82,7 +85,7 @@ function Inscription({ db, logo }) {
           tempsEffectue: 0,
           tachesActives: 0,
           tachesCompletes: 0,
-          date: inscriptionDate.toLocaleDateString(),
+          date: inscriptionDate,
           color: "green",
         },
       ];
@@ -100,7 +103,7 @@ function Inscription({ db, logo }) {
       const defaultTask = {
         nom: "Un exemple de tache",
         categorie: "Tutoriel",
-        dateDue: inscriptionDate.toDate(),
+        dateDue: inscriptionDate,
         userId: userCredential.user.uid,
       };
 
@@ -117,11 +120,12 @@ function Inscription({ db, logo }) {
       } else if (error.code === "auth/weak-password") {
         setError("Le mot de passe doit contenir au moins 6 caractères.");
       } else {
-        setError("Erreur d'inscription.");
+        setError(`Erreur d'inscription: ${error.message}`);
       }
     }
   };
 
+  // Retour vers la page de connexion si compte déjà existant
   const handleSeConnecter = () => {
     navigate("/");
   };
@@ -201,6 +205,7 @@ function Inscription({ db, logo }) {
         </button>
       </form>
       <br />
+      {/* Redirection vers la connexion */}
       <button onClick={handleSeConnecter}>
         <p className="text-sm  text-gray-700 mt-3 text-center">
           ⬅️ je possède déjà un compte...

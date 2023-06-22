@@ -1,12 +1,15 @@
 import React from "react";
-import ReactDOM from "react-dom";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import "./firebase";
 import "./tailwind.css";
 import App from "./App";
 import { AuthProvider } from "./App";
 
-ReactDOM.render(
+import { createRoot } from "react-dom/client";
+
+const root = document.getElementById("root");
+
+createRoot(root).render(
   <React.StrictMode>
     <AuthProvider>
       <Router>
@@ -15,6 +18,5 @@ ReactDOM.render(
         </Routes>
       </Router>
     </AuthProvider>
-  </React.StrictMode>,
-  document.getElementById("root")
+  </React.StrictMode>
 );

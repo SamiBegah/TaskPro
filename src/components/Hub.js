@@ -7,6 +7,7 @@ import {
   getDocs,
   doc,
   getDoc,
+  updateDoc,
 } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import TodoList from "./TodoList";
@@ -14,7 +15,7 @@ import Statistics from "./Statistics";
 import Calendrier from "./Calendrier";
 import Parametres from "./Parametres";
 import NavBar from "./NavBar";
-import SideBar from "./SideBar";
+import Notifications from "./Notifications";
 
 function Hub({ db }) {
   const auth = getAuth();
@@ -23,7 +24,6 @@ function Hub({ db }) {
   const [categories, setCategories] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [sessions, setSessions] = useState([]);
-
   const [sessionActive, setSessionActive] = useState(false);
 
   const [newTask, setNewTask] = useState({
@@ -40,6 +40,16 @@ function Hub({ db }) {
     tachesActives: 0,
   });
 
+  // Mettre a jour la ville pour l'api meteo //
+  const [weatherLocation, setWeatherLocation] = useState("");
+  const updateWeatherLocationInDb = async (newLocation) => {
+    const userDoc = doc(db, "users", auth.currentUser.uid);
+    await updateDoc(userDoc, {
+      weatherLocation: newLocation,
+    });
+  };
+
+  // Génération de couleurs aléatoire pour les catégories
   function getRandomColor() {
     const letters = "0123456789ABCDEF";
     let color = "#";
@@ -69,6 +79,10 @@ function Hub({ db }) {
               id: doc.id,
             }));
 
+            // Recuperer la ville de meteo //
+            const getWeatherLocation = userDoc.data().weatherLocation;
+            setWeatherLocation(getWeatherLocation); //
+
             setSessions(sessionsData);
 
             // Recuperer les taches
@@ -77,9 +91,10 @@ function Hub({ db }) {
               where("userId", "==", auth.currentUser.uid)
             );
             const tasksQuerySnapshot = await getDocs(tasksQuery);
-            const tasksData = tasksQuerySnapshot.docs
-              .map((doc) => ({ ...doc.data(), id: doc.id }))
-              .filter((task) => task.userId === auth.currentUser.uid);
+            const tasksData = tasksQuerySnapshot.docs.map((doc) => ({
+              ...doc.data(),
+              id: doc.id,
+            }));
 
             setTasks(tasksData);
 
@@ -89,13 +104,14 @@ function Hub({ db }) {
               where("userId", "==", auth.currentUser.uid)
             );
             const categoriesQuerySnapshot = await getDocs(categoriesQuery);
-            const categoriesData = categoriesQuerySnapshot.docs
-              .map((doc) => ({ ...doc.data(), id: doc.id }))
-              .filter((category) => category.userId === auth.currentUser.uid);
+            const categoriesData = categoriesQuerySnapshot.docs.map((doc) => ({
+              ...doc.data(),
+              id: doc.id,
+            }));
 
             setCategories(categoriesData);
           } else {
-            console.log("L'utilisateur n'existe pas...");
+            alert("L'utilisateur n'existe pas...");
           }
         };
 
@@ -105,8 +121,9 @@ function Hub({ db }) {
 
     return () => unsubscribe();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [auth.currentUser?.uid]);
 
+  // Message de bienvenue à la connexion //
   useEffect(() => {
     if (userData) {
       const existingWelcomeNotif = notifications.find(
@@ -127,15 +144,16 @@ function Hub({ db }) {
     }
   }, [userData]);
 
+  // Verifier si des taches sont dûes dans les prochaines 24 heures //
   const checkTaskNotifications = async (tasks) => {
     if (!tasks) {
       return;
     } else {
       const user = auth.currentUser;
 
-      const currentDate = new Date();
+      const currentDate = new Date().toISOString();
       const threeDaysFromNow = new Date();
-      threeDaysFromNow.setDate(currentDate.getDate() + 1);
+      threeDaysFromNow.setDate(currentDate + 1);
 
       const approachingTasks = tasks.filter((task) => {
         const taskDueDate = new Date(task.dateDue);
@@ -151,7 +169,7 @@ function Hub({ db }) {
           (notification) =>
             notification.type === "notif" && notification.taskId === task.id
         );
-
+        // Afficher une notification pour prévenir l'utilisateur //
         if (!existingTaskNotif) {
           const newNotification = {
             contenu: `La tache "${task.nom}" est due dans moins de 24 heures!`,
@@ -174,10 +192,10 @@ function Hub({ db }) {
   }, [tasks]);
 
   return (
-    <div className="w-full h-full rounded-xl flex flex-col p-2 shadow-lg ">
-      <div className="flex  flex-col w-full h-full ">
+    <div className="w-full h-full rounded-xl flex flex-col p-1 shadow-lg  ">
+      <div className="flex  flex-col w-full h-full  p-2 ">
         <NavBar />
-        <SideBar
+        <Notifications
           notifications={notifications}
           setNotifications={setNotifications}
           setSessions={setSessions}
@@ -185,6 +203,8 @@ function Hub({ db }) {
           userData={userData}
           sessionActive={sessionActive}
           setSessionActive={setSessionActive}
+          weatherLocation={weatherLocation}
+          setWeatherLocation={setWeatherLocation}
         />
 
         <Routes>
@@ -230,7 +250,17 @@ function Hub({ db }) {
               />
             }
           />
-          <Route path="/parametres" element={<Parametres />} db={db} />
+          <Route
+            path="/parametres"
+            element={
+              <Parametres
+                db={db}
+                weatherLocation={weatherLocation}
+                setWeatherLocation={setWeatherLocation}
+                updateWeatherLocationInDb={updateWeatherLocationInDb}
+              />
+            }
+          />
         </Routes>
       </div>
     </div>

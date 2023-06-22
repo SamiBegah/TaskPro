@@ -8,8 +8,10 @@ function ListeCategories({
   newCategorie,
   setCategories,
   setNewCategorie,
+  tasks,
 }) {
   // GESTION CATEGORIES //
+  // Ajout de categories
   const addCategorie = async (event) => {
     event.preventDefault();
     const auth = getAuth();
@@ -34,12 +36,6 @@ function ListeCategories({
     });
   };
 
-  const removeCategorie = (nom) => {
-    setCategories((prevCategories) =>
-      prevCategories.filter((categorie) => categorie.nom !== nom)
-    );
-  };
-
   const handleCategorieChange = (event) => {
     const { name, value } = event.target;
     setNewCategorie((prevCategorie) => ({
@@ -47,11 +43,29 @@ function ListeCategories({
       [name]: value,
     }));
   };
+
+  // Supression de categories
+  const removeCategorie = (nom) => {
+    const tasksLinkedToCategory = tasks.filter(
+      (task) => task.categorie === nom
+    );
+    if (tasksLinkedToCategory.length > 0) {
+      alert(
+        "Des tâches existent pour cette catégorie, veuillez-les terminer ou les supprimer avant."
+      );
+    } else {
+      setCategories((prevCategories) =>
+        prevCategories.filter((categorie) => categorie.nom !== nom)
+      );
+    }
+  };
+
   return (
     <>
-      <div className="w-1/2 flex flex-col items-center justify-between bg-white border border-gray-200  rounded-xl transition-all">
+      <div className="w-1/2 flex flex-col items-center justify-between bg-white  rounded-xl transition-all">
         <h3 className="text-center font-bold p-3">Categories</h3>
-        <ul className="overflow-y-auto w-5/6 flex-1  py-2 rounded-md space-y-2 border ">
+        <ul className="overflow-y-auto w-5/6 flex-1  py-2 rounded-md space-y-2  ">
+          {/* Affichage des categories */}
           {categories.map((categorie) => (
             <li
               key={categorie.id}
@@ -83,8 +97,9 @@ function ListeCategories({
             </li>
           ))}
         </ul>
-        {/* AJOUT CATEGORIE */}
+        {/* Formulaire d'ajout de catégorie */}
         <form className="flex p-4 gap-5" onSubmit={addCategorie}>
+          {/* Choix de couleur pour la catégorie */}
           <input
             type="color"
             value={newCategorie.color}
@@ -107,7 +122,6 @@ function ListeCategories({
           >
             <span className="absolute inset-0 border-0 group-hover:border-[25px] ease-linear duration-100 transition-all border-green-300 rounded-full"></span>
             <span className="px-2 text-sm relative w-full text-center text-white transition-colors duration-200 ease-in-out group-hover:text-blue-custom">
-              {" "}
               Ajouter une categorie
             </span>
           </button>

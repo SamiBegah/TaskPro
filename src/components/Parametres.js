@@ -6,7 +6,11 @@ import {
   EmailAuthProvider,
 } from "firebase/auth";
 
-function Parametres() {
+function Parametres({
+  weatherLocation,
+  setWeatherLocation,
+  updateWeatherLocationInDb,
+}) {
   const auth = getAuth();
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -45,19 +49,88 @@ function Parametres() {
     }
   };
 
+  // GESTION DE VILLE DE L'API METEO
+  const [newWeatherLocation, setNewWeatherLocation] = useState(
+    weatherLocation || "New York"
+  );
+  const [cityError, setCityError] = useState(false);
+
+  const handleWeatherLocationChange = async (e) => {
+    e.preventDefault();
+    try {
+      const newLocation = newWeatherLocation;
+      // Si la ville est valide, changer la ville affichée par l'api meteo
+      const isValidCity = await validateCity(newLocation);
+      if (isValidCity) {
+        setCityError(false);
+        await updateWeatherLocationInDb(newLocation);
+        setWeatherLocation(newLocation);
+      } else {
+        setCityError(true);
+      }
+    } catch (error) {
+      setCityError(true);
+    }
+  };
+
+  // Verifier si l'utilisateur entre une ville valide
+  const validateCity = async (city) => {
+    const apiKey = "4301ff94eb15a4ed9aa1bf9e759ce8fd";
+    const url = `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(
+      city
+    )}&appid=${apiKey}`;
+    try {
+      const response = await fetch(url);
+      const data = await response.json();
+      if (data.cod === 200) {
+        return true; // La ville existe
+      }
+      alert("Cette ville n'existe pas!");
+      return false;
+      // La ville n'existe pas
+    } catch (error) {
+      return false;
+    }
+  };
+
   return (
     <section className="flex-1 w-full space-y-2 h-full">
       <div className="flex flex-col gap-2 w-full h-full p-1">
-        <div className="relative flex flex-col border border-gray-200 bg-white rounded-lg w-full h-full p-3  gap-2">
+        <div className="relative flex flex-col border border-gray-200 bg-white rounded-lg w-full h-full p-5  gap-2">
           <h1 className="text-xl font-bold p-2"> Parametres </h1>
-
-          <div className="w-full h-4/6 p-2 py-2">
+          {/* Formulaire de changement de ville */}
+          <form
+            onSubmit={handleWeatherLocationChange}
+            className="flex flex-col p-5 gap-3"
+          >
+            <span>Votre ville:</span>
+            <input
+              value={newWeatherLocation}
+              onChange={(e) => setNewWeatherLocation(e.target.value)}
+              className="w-60 text-center border border-blue-500 p-2"
+            />
             <button
-              className="bg-red-500 text-white font-bold py-2 px-4 rounded mt-4"
+              type="submit"
+              className="bg-blue-500 w-60 text-white font-bold py-2 px-4 rounded"
+            >
+              Changer la ville
+            </button>
+            {cityError && (
+              <p className="text-red-500 mt-2">Cette ville n'existe pas.</p>
+            )}
+            <br />
+          </form>
+          <div className=" h-4/6 flex flex-col p-5  py-2">
+            {/* Boutton de suppression de compte */}
+            <span>Gestion du compte :</span>
+            <button
+              className="bg-red-500 w-60 text-white font-bold py-2 rounded mt-4 "
               onClick={handleModalOpen}
             >
               Supprimer mon compte
             </button>
+
+            {/* Apparition d'un modal pour confirmer la suppresion de compte de l'utilisateur avec son mot de passe */}
             {showModal && (
               <div className="fixed top-0 left-0 flex items-center justify-center w-full h-full bg-black bg-opacity-50">
                 <div className="bg-white rounded-lg p-4">
@@ -69,6 +142,7 @@ function Parametres() {
                     >
                       Entrez votre mot de passe
                     </label>
+
                     <input
                       type="password"
                       id="password"
@@ -96,6 +170,10 @@ function Parametres() {
               </div>
             )}
           </div>
+
+          <i className="text-xs text-right">
+            Credits: les icones utilisées sur ce site proviennent de Icons8.com
+          </i>
         </div>
       </div>
     </section>

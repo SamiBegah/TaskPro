@@ -7,7 +7,6 @@ function Connexion({ logo }) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const navigate = useNavigate();
-
   const auth = getAuth();
 
   // GESTION DE LA CONNEXION (avec firebase/auth)
@@ -80,9 +79,6 @@ function Connexion({ logo }) {
               <p className="absolute -bottom-10 text-red-500">{error}</p>
             )}
           </div>
-          <p className="text-xs text-right text-gray-700">
-            Mot de passe <span className="font-bold"> oublié?</span>
-          </p>
         </div>
 
         <button
@@ -99,6 +95,7 @@ function Connexion({ logo }) {
         <div className="border-b w-1/2"></div>
       </div>
       <br />
+      {/* Redirection vers la page d'inscription */}
       <button
         onClick={() => navigate("/inscription")}
         className="font-bold rounded-2xl  text-black p-2 text-center shadow-sm border border-gray-200 "

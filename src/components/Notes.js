@@ -13,6 +13,7 @@ function Notes({ db }) {
   const auth = getAuth();
   const [note, setNote] = useState("");
 
+  // Recuperation du blocnotes de l'utilisateur
   useEffect(() => {
     const fetchUserNote = async () => {
       const notesCollectionRef = collection(db, "notes");
@@ -31,6 +32,7 @@ function Notes({ db }) {
     fetchUserNote();
   }, [db, auth.currentUser]);
 
+  // Mise a jour du blocnotes
   useEffect(() => {
     const updateNote = async () => {
       const notesCollectionRef = collection(db, "notes");
@@ -45,17 +47,18 @@ function Notes({ db }) {
         await updateDoc(userNoteDoc.ref, { note });
       }
     };
-
     updateNote();
   }, [db, auth.currentUser, note]);
+
+  // Affichage du blocnotes
   return (
-    <div className="w-1/2 h-full bg-white border border-gray-200 rounded-xl flex flex-col items-center">
+    <div className="w-1/2 h-full pb-5 xl:pb-2 bg-white  border-gray-200 rounded-xl flex flex-col items-center">
       <h3 className="text-center font-bold p-3">Notes</h3>
       <textarea
         value={note}
         onChange={(event) => setNote(event.target.value)}
         rows="4"
-        className="w-5/6 h-5/6  p-3 text-sm  bg-blue-custom bg-opacity-10 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+        className="resize-none w-5/6 h-5/6  p-3 text-sm  bg-blue-custom bg-opacity-10 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
         placeholder="Ecrivez vos notes ici..."
       ></textarea>
     </div>

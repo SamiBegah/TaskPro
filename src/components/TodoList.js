@@ -1,5 +1,4 @@
 import { useState, useRef } from "react";
-import { getAuth } from "firebase/auth";
 import {
   getFirestore,
   collection,
@@ -16,6 +15,7 @@ import Done from "../img/done.png";
 import ListeCategories from "./ListeCategories";
 import Notes from "./Notes";
 import { v4 as uuidv4 } from "uuid";
+import { getAuth } from "firebase/auth";
 
 function TodoList({
   tasks,
@@ -31,12 +31,12 @@ function TodoList({
   sessionActive,
   setSessionActive,
 }) {
+  // GESTION DES TACHES
   const [editTaskId, setEditTaskId] = useState(null);
   const [editTask, setEditTask] = useState(null);
   const [originalTask, setOriginalTask] = useState(null);
 
-  // GESTION DES TACHES
-
+  // Ajout de tâches dans l'utilisateur correspondant
   const addTask = async (event) => {
     event.preventDefault();
     const auth = getAuth();
@@ -46,6 +46,7 @@ function TodoList({
     const newTaskWithIdAndUser = {
       ...newTask,
       userId: auth.currentUser.uid,
+      dateDue: newTask.dateDue,
     };
     const docRef = await addDoc(taskCollection, newTaskWithIdAndUser);
 
@@ -62,6 +63,7 @@ function TodoList({
     }));
   };
 
+  // Modification de tâche
   const modifyTask = async (id) => {
     try {
       const db = getFirestore();
@@ -87,6 +89,7 @@ function TodoList({
     }
   };
 
+  // Suppression de tâche
   const removeTask = async (id) => {
     const db = getFirestore();
     const taskRef = doc(db, "taches", id);
@@ -95,14 +98,20 @@ function TodoList({
     setTasks((prevTasks) => prevTasks.filter((task) => task.id !== id));
   };
 
-  const saveTask = () => {
-    modifyTask(editTaskId, editTask);
-    setEditTaskId(null);
-    setEditTask(null);
-  };
+  // Modification de tache
+  const handleNewTaskChange = (e) => {
+    const { name, value } = e.target;
+    // Validation de la date due de la tache (doit etre max 1 an dans le futur)
+    if (name === "dateDue") {
+      const selectedDate = new Date(value);
+      const oneYearFromNow = new Date();
+      oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1);
 
-  const handleNewTaskChange = (event) => {
-    const { name, value } = event.target;
+      if (selectedDate > oneYearFromNow) {
+        alert("La date maximum est de 1 ans à partir d'aujourdhui.");
+        return;
+      }
+    }
     setNewTask((prevTask) => ({
       ...prevTask,
       [name]: value,
@@ -117,6 +126,14 @@ function TodoList({
     }));
   };
 
+  // Sauvegarde de la modification d'une tâche
+  const saveTask = () => {
+    modifyTask(editTaskId, editTask);
+    setEditTaskId(null);
+    setEditTask(null);
+  };
+
+  // Annuler les modifications d'une tâche
   const cancelEditTask = () => {
     if (originalTask) {
       setTasks((prevTasks) =>
@@ -130,7 +147,8 @@ function TodoList({
     setOriginalTask(null);
   };
 
-  // GESTION DES NOTIFICATIONS //
+  // GESTION DES SEANCES DE TACHES (notifications Timer) //
+  // Ajouter une seance notification
   const addNotification = (task, type) => {
     const newNotification = {
       id: uuidv4(),
@@ -138,7 +156,7 @@ function TodoList({
       categorie: task.categorie,
       type: type,
     };
-    console.log("Adding notification:", newNotification);
+
     setNotifications((prevNotifications) => [
       ...prevNotifications,
       newNotification,
@@ -146,6 +164,8 @@ function TodoList({
   };
 
   // Gestion de la fin de tache
+  const handleCheckboxChange = useCheckboxChangeHandler();
+
   function useCheckboxChangeHandler() {
     const notificationTimeoutRef = useRef(null);
 
@@ -159,7 +179,7 @@ function TodoList({
         setTasks((prevTasks) =>
           prevTasks.filter((prevTask) => prevTask.id !== task.id)
         );
-
+        // Mettre a jour les statistics dans la categorie correspondante
         setCategories((prevCategories) =>
           prevCategories.map((category) =>
             category.nom === task.categorie
@@ -171,7 +191,7 @@ function TodoList({
               : category
           )
         );
-
+        // Message de fin de tache
         setNotifications((prevNotifications) => [
           ...prevNotifications,
           {
@@ -190,9 +210,7 @@ function TodoList({
     return handleCheckboxChange;
   }
 
-  const handleCheckboxChange = useCheckboxChangeHandler();
-
-  // Annulation de taches
+  // Retourner la tache à son statut incomplet
   const handleCancel = (task) => {
     setTasks((prevTasks) => [...prevTasks, task]);
     setCategories((prevCategories) =>
@@ -209,9 +227,9 @@ function TodoList({
   };
 
   return (
-    <section className="flex-1 w-full space-y-2 h-full">
+    <section className="flex-1 w-full space-y-2 h-full p-2 my-2  border rounded-xl bg-white">
       <div className="flex flex-col gap-2 w-full h-full p-1  ">
-        <div className="relative flex flex-col items-center border border-gray-200 bg-white rounded-lg w-full h-2/3 p-3  gap-2">
+        <div className="relative flex flex-col items-center-gray-200  bg-white rounded-lg w-full h-2/3 p-5  gap-2">
           <h1 className="text-xl text-left font-bold p-2 w-full">
             Tableau de bords
           </h1>
@@ -222,8 +240,9 @@ function TodoList({
             <div className="w-1/6 text-center font-bold">Date dû</div>
             <div className="w-2/6 text-center font-bold"></div>
           </div>
-          <div className="flex flex-col w-full gap-2 border-gray-200 text-black p-2 ">
+          <div className="flex flex-col w-full overflow-y-auto max-h-[350px] gap-2 border-gray-200 text-black p-2 ">
             {/* TACHES LISTEES */}
+            {console.log(tasks)}
             {tasks.map((task) => (
               <div
                 className="flex text-md bg-opacity-20 w-full h-12"
@@ -295,7 +314,7 @@ function TodoList({
                         className="border-cyan-950 text-center border-b m-2"
                       />
                     ) : (
-                      task.dateDue
+                      new Date(task.dateDue).toLocaleDateString()
                     )}
                   </div>
                   <div className="w-2/6  flex justify-center items-center  rounded-r-xl gap-2">
@@ -330,7 +349,6 @@ function TodoList({
                             setSessionActive(true);
                           }}
                         >
-                          {console.log(sessionActive)}
                           <span className="absolute inset-0 border-0 group-hover:border-[25px] ease-linear duration-100 transition-all border-white rounded-full"></span>
                           <span className="text-sm relative w-full text-center text-white transition-colors duration-200 ease-in-out group-hover:text-blue-custom">
                             Lancer une seance
@@ -368,7 +386,7 @@ function TodoList({
           </div>
 
           {/* AJOUT DE TACHES */}
-          <div className="flex absolute bottom-0 w-full rounded-b-xl  p-2 py-2 pb-3">
+          <div className="flex absolute bottom-0 left-0 w-full rounded-b-xl justify-center  px-2 py-2 pb-3">
             <form
               onSubmit={addTask}
               className="flex w-full text-md border-blue-custom border border-opacity-50 rounded-xl "
@@ -376,17 +394,18 @@ function TodoList({
               <div className="w-16 flex justify-center items-center p-1 rounded-l-xl">
                 <img className="w-3/4" src={Add} alt="Add icon" />
               </div>
-              <div className="w-1/3  flex justify-center items-center p-2">
+              <div className="w-2/6  flex justify-center items-center p-2">
                 <input
                   value={newTask.nom}
                   name="nom"
                   required
+                  maxLength={40}
                   onChange={handleNewTaskChange}
                   placeholder="Nom de la tache"
                   className="border-b border-cyan-950 text-center "
                 ></input>
               </div>
-              <div className="w-1/4 flex justify-center items-center p-2">
+              <div className="w-1/6 flex justify-center items-center p-2">
                 <select
                   value={newTask.categorie}
                   name="categorie"
@@ -405,7 +424,7 @@ function TodoList({
                   ))}
                 </select>
               </div>
-              <div className="w-1/5 flex justify-center items-center p-2">
+              <div className="w-1/6 flex justify-center items-center p-2">
                 <input
                   type="date"
                   name="dateDue"
@@ -415,7 +434,7 @@ function TodoList({
                   className="border-b border-cyan-950 text-center"
                 ></input>
               </div>
-              <div className="w-1/4 flex justify-around items-center p-2 rounded-r-xl">
+              <div className="w-2/6 flex justify-around items-center p-2 rounded-r-xl">
                 <button
                   type="submit"
                   className="relative h-8 inline-flex items-center justify-start inline-block px-5 py-1 overflow-hidden font-medium transition-all bg-blue-custom rounded-lg hover:bg-green-300 group"
@@ -436,6 +455,7 @@ function TodoList({
             <Notes db={db} />
             {/* CATEGORIES*/}
             <ListeCategories
+              tasks={tasks}
               categories={categories}
               db={db}
               newCategorie={newCategorie}

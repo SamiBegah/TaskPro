@@ -2,69 +2,68 @@ import { useState, useEffect } from "react";
 import xBtn from "../img/xBtn.png";
 import Timer from "./Timer";
 
-function SideBar({
+function Notifications({
   notifications,
   setNotifications,
   categories,
   setCategories,
   setSessions,
-  timerId,
   db,
   sessionActive,
   setSessionActive,
+  weatherLocation,
 }) {
+  // GESTION DU TIMER
   const [isTimerRunning, setIsTimerRunning] = useState(false);
-  const [activeTimer, setActiveTimer] = useState(null);
 
-  const startTimer = (timerId) => {
-    setActiveTimer(timerId);
+  // Debut d'une seance
+  const startTimer = () => {
     setSessionActive(true);
     setIsTimerRunning(true);
   };
 
+  // Fin d'une seance
   const endTimer = () => {
-    setActiveTimer(null);
     setSessionActive(false);
     setIsTimerRunning(false);
   };
 
-  // GESTION DES NOTIFICATIONS
+  // Supprimer une notification
   const deleteNotification = (notif) => {
     setNotifications((prevNotifications) =>
       prevNotifications.filter((thisNotification) => thisNotification !== notif)
     );
   };
 
-  const updateNotifications = (oldNotification, newNotification) => {
-    setNotifications((prevNotifications) =>
-      prevNotifications.map((notif) =>
-        notif === oldNotification ? newNotification : notif
-      )
-    );
-  };
-
-  // API METEO OPENWEATHERMAP
+  // GESTION DE L'API METEO OPENWEATHERMAP
   const [weatherData, setWeatherData] = useState(null);
 
-  const getWeatherData = async (latitude, longitude) => {
-    const apiKey = "4301ff94eb15a4ed9aa1bf9e759ce8fd";
-    let url;
-    if (latitude && longitude) {
-      url = `https://api.openweathermap.org/data/2.5/weather?lat=${latitude}&lon=${longitude}&appid=${apiKey}&units=metric`;
-    } else {
-      const newYorkLatitude = 40.7128;
-      const newYorkLongitude = -74.006;
-      url = `https://api.openweathermap.org/data/2.5/weather?lat=${newYorkLatitude}&lon=${newYorkLongitude}&appid=${apiKey}&units=metric`;
-    }
-    const response = await fetch(url);
-    const data = await response.json();
-    const cityName = data.name || "New York";
-    const icon = data.weather[0].icon;
-    setWeatherData({ ...data, icon, cityName });
-  };
-
-  // Recuperer la localisation de l'utilisateur
+  // Recuperation et affichage de la meteo
   useEffect(() => {
+    const getWeatherData = async (latitude, longitude) => {
+      const apiKey = "4301ff94eb15a4ed9aa1bf9e759ce8fd";
+      let url;
+      if (latitude && longitude) {
+        url = `https://api.openweathermap.org/data/2.5/weather?lat=${latitude}&lon=${longitude}&appid=${apiKey}&units=metric`;
+      } else {
+        const location = weatherLocation || "";
+        url = `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(
+          location
+        )}&appid=${apiKey}&units=metric`;
+      }
+      // Appelle a l'api OpenWeatherMap
+      try {
+        const response = await fetch(url);
+        const data = await response.json();
+
+        const cityName = data.name || weatherLocation;
+        const icon = data.weather[0].icon;
+        setWeatherData({ ...data, icon, cityName });
+      } catch (error) {
+        console.error("Weather API Error:", error);
+      }
+    };
+    // Si l'utilisateur accepte de partager sa localisation, afficher meteo ville locale
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
@@ -72,15 +71,18 @@ function SideBar({
           getWeatherData(latitude, longitude);
         },
         (error) => {
-          getWeatherData("New York"); // localisation par default si utilisateur refuse de partager ses coordonnees
+          getWeatherData();
         }
       );
+    } else {
+      getWeatherData();
     }
-  }, []);
+  }, [weatherLocation || ""]);
 
   return (
-    <section className="relative rounded-b-xl flex px-3">
+    <section className="relative rounded-b-xl flex px-3 ">
       <div className="flex h-24 ">
+        {/* Affichage de la meteo */}
         <div className="h-24 w-44 absolute right-3 rounded-2xl bg-white shadow-sm border border-slate-200 flex flex-col items-center justify-around p-1 gap-1">
           <div className="flex p-2 ">
             <div className="w-2/3">
@@ -109,9 +111,9 @@ function SideBar({
               return (
                 <li
                   key={index}
-                  className={`h-24 w-60 transition-all duration-200 ease-in-out rounded-2xl ${
+                  className={`h-24 w-60  shadow-md transition-all duration-200 ease-in-out rounded-2xl ${
                     notif.color ? notif.color : "bg-white"
-                  } shadow-sm border border-slate-200 flex flex-col items-center justify-around p-1 gap-1`}
+                  } border border-slate-200 flex flex-col items-center justify-around p-1 gap-1`}
                 >
                   <div className="relative flex justify-between items-center w-full h-full gap-2">
                     <p className="text-center text-sm flex-grow">
@@ -131,19 +133,23 @@ function SideBar({
                   {/* Option de retour en arriere */}
                   {notif.undo && (
                     <button
-                      className="flex justify-center items-center h-8 w-32 gap-2 bg-gradient rounded-full shadow-md text-white"
+                      className="relative h-8 inline-flex items-center justify-start inline-block px-5 py-1 overflow-hidden font-medium transition-all bg-blue-custom rounded-lg hover:bg-white group"
                       onClick={() => {
                         notif.undo();
                         deleteNotification(notif);
                       }}
                     >
-                      Annuler
+                      <span className="absolute inset-0 border-0 group-hover:border-[25px] ease-linear duration-100 transition-all border-white rounded-full"></span>
+                      <span className="text-sm relative w-full text-center text-white transition-colors duration-200 ease-in-out group-hover:text-blue-custom">
+                        Annuler
+                      </span>
                     </button>
                   )}
                 </li>
               );
             } else {
               return (
+                // Affichage des notifications de minuteur pour les seances
                 <Timer
                   key={notif.id}
                   notif={notif}
@@ -160,7 +166,6 @@ function SideBar({
                   isTimerRunning={isTimerRunning}
                   setSessionActive={setSessionActive}
                   sessionActive={sessionActive}
-                  updateNotifications={updateNotifications}
                 />
               );
             }
@@ -171,4 +176,4 @@ function SideBar({
   );
 }
 
-export default SideBar;
+export default Notifications;

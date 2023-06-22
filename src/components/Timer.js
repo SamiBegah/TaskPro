@@ -1,5 +1,5 @@
 import { useTimer } from "react-timer-hook";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { getAuth } from "firebase/auth";
 import {
   collection,
@@ -9,11 +9,9 @@ import {
   serverTimestamp,
   deleteDoc,
 } from "firebase/firestore";
-import TimerIcon from "../img/timer.png";
 
 function Timer({
   notif,
-  notifications,
   setNotifications,
   deleteNotification,
   xBtn,
@@ -22,12 +20,12 @@ function Timer({
   db,
   sessionActive,
   setSessionActive,
-  timerId,
-  updateNotifications,
 }) {
   const auth = getAuth();
 
-  const [selectedTime, setSelectedTime] = useState(30 * 60);
+  // GESTION DU MINUTEUR
+
+  const [selectedTime, setSelectedTime] = useState(15 * 60);
   const [sessionId, setSessionId] = useState(null);
 
   const [startTime, setStartTime] = useState(null);
@@ -46,15 +44,15 @@ function Timer({
     setSelectedTime(Number(event.target.value) * 60);
   };
 
-  // GESTION DU MINUTEUR
-
-  const handleTimerClick = async () => {
+  // Commencer le minuteur
+  const handleStartClick = async () => {
     if (!timerStarted && sessionActive) {
       const newStartTime = Date.now();
-      setStartTime(newStartTime); // store the start time
+      setStartTime(newStartTime);
       setExpiryTimestamp(newStartTime + selectedTime * 1000);
       restart(newStartTime + selectedTime * 1000);
       setTimerStarted(true);
+      // Creer une session et l'enregistrer dans la base de donnees firebase
       try {
         const session = {
           categorie: notif.categorie,
@@ -62,7 +60,7 @@ function Timer({
           start: serverTimestamp(),
           end: null,
           duration: null,
-          userId: auth.currentUser.uid, // assuming you have auth setup
+          userId: auth.currentUser.uid,
         };
 
         const sessionCollectionRef = collection(db, "sessions");
@@ -72,11 +70,12 @@ function Timer({
         setExpiryTimestamp(new Date().getTime() + selectedTime * 1000);
         startTimer && startTimer();
       } catch (error) {
-        console.error("Error starting timer: ", error);
+        console.error("Erreur debut timer: ", error);
       }
     }
   };
 
+  // Arreter le minuteur
   const handleStopClick = async () => {
     if (timerStarted) {
       setTimerStarted(false);
@@ -84,18 +83,19 @@ function Timer({
       const duration = Math.round((endTime.getTime() - startTime) / 1000 / 60); // Duree en minutes
       try {
         const sessionDocRef = doc(db, "sessions", sessionId);
-
+        // Supprimer la session si elle a durée moins d'une minute
         if (duration < 1) {
           await deleteDoc(sessionDocRef);
         } else {
+          // Sinon, mettre a jour la session
           await updateDoc(sessionDocRef, {
             end: endTime,
             duration: duration,
           });
         }
-
         deleteNotification(notif);
-        // Afficher le nombre de minutes enregistrées ou annuler si < 1 min //
+
+        // Afficher le nombre de minutes enregistrées ou notif d'annulation si < 1 min //
         const newNotification =
           duration < 1
             ? {
@@ -113,12 +113,11 @@ function Timer({
           ...prevNotifications,
           newNotification,
         ]);
-
         endTimer && endTimer();
         setStartTime(null);
         setSessionActive(false);
       } catch (error) {
-        console.error("Error ending timer: ", error);
+        console.error("Erreur fin timer: ", error);
       }
     }
   };
@@ -133,7 +132,10 @@ function Timer({
         {!isRunning && (
           <button
             className="shadow-xl"
-            onClick={() => deleteNotification(notif)}
+            onClick={() => {
+              deleteNotification(notif);
+              setSessionActive(false);
+            }}
           >
             <img
               src={xBtn}
@@ -143,7 +145,7 @@ function Timer({
           </button>
         )}
       </div>
-
+      {/* Formulaire de choix du temps de la séance */}
       <form className="flex flex-col gap-2">
         <div className="flex">
           <div className="flex flex-col justify-center items-center text-md text-cyan-950 w-full ">
@@ -155,15 +157,13 @@ function Timer({
                     className="rounded-xl outline-none p-1 w-24"
                   >
                     <option value="15">15 mins</option>
-                    <option value="30" selected>
-                      30 mins
-                    </option>
+                    <option value="30">30 mins</option>
                     <option value="60">60 mins</option>
                     <option value="90">90 mins</option>
                   </select>
                 </div>
               )}
-
+              {/* Affichage du minuteur */}
               {isRunning && (
                 <div className="bg-white rounded-xl outline-none text-center p-1">
                   <span>{hours}</span>:<span>{Math.floor(minutes % 60)}</span>:
@@ -171,10 +171,11 @@ function Timer({
                 </div>
               )}
 
+              {/* Gestion des boutons commencer/terminer du minuteur */}
               {!isRunning && (
                 <button
                   className="relative h-8 inline-flex items-center justify-start inline-block px-5 py-1 overflow-hidden font-medium transition-all bg-blue-custom rounded-lg hover:bg-white group"
-                  onClick={handleTimerClick}
+                  onClick={handleStartClick}
                   disabled={isRunning || timerStarted}
                 >
                   <span className="absolute inset-0 border-0 group-hover:border-[25px] ease-linear duration-100 transition-all border-white rounded-full"></span>
