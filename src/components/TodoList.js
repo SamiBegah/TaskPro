@@ -242,7 +242,7 @@ function TodoList({
           </div>
           <div className="flex flex-col w-full overflow-y-auto max-h-[350px] gap-2 border-gray-200 text-black p-2 ">
             {/* TACHES LISTEES */}
-            {console.log(tasks)}
+
             {tasks.map((task) => (
               <div
                 className="flex text-md bg-opacity-20 w-full h-12"
@@ -314,7 +314,7 @@ function TodoList({
                         className="border-cyan-950 text-center border-b m-2"
                       />
                     ) : (
-                      new Date(task.dateDue).toLocaleDateString()
+                      new Date(task.dateDue).toISOString().split("T")[0]
                     )}
                   </div>
                   <div className="w-2/6  flex justify-center items-center  rounded-r-xl gap-2">

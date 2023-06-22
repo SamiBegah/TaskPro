@@ -77,7 +77,7 @@ function Notifications({
     } else {
       getWeatherData();
     }
-  }, [weatherLocation || ""]);
+  }, [weatherLocation]);
 
   return (
     <section className="relative rounded-b-xl flex px-3 ">

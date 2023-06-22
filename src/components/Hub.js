@@ -9,6 +9,7 @@ import {
   getDoc,
   updateDoc,
 } from "firebase/firestore";
+import { onSnapshot } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import TodoList from "./TodoList";
 import Statistics from "./Statistics";
@@ -47,6 +48,7 @@ function Hub({ db }) {
     await updateDoc(userDoc, {
       weatherLocation: newLocation,
     });
+    setWeatherLocation(newLocation);
   };
 
   // Génération de couleurs aléatoire pour les catégories
@@ -61,12 +63,22 @@ function Hub({ db }) {
 
   // RECUPERATION DES DONNES UTILISATEURS DE FIRESTORE
   useEffect(() => {
+    let unsubscribeUserDoc; // Declare outside of function
+
     const unsubscribe = getAuth().onAuthStateChanged((user) => {
       if (user) {
         const fetchUserData = async () => {
-          const userDoc = await getDoc(doc(db, "users", auth.currentUser.uid));
-          if (userDoc.exists()) {
-            setUserData(userDoc.data());
+          const userDocRef = doc(db, "users", auth.currentUser.uid);
+          const userDocSnapshot = await getDoc(userDocRef);
+
+          if (userDocSnapshot.exists()) {
+            unsubscribeUserDoc = onSnapshot(userDocRef, (docSnapshot) => {
+              // Assign return value here
+              setUserData(docSnapshot.data());
+              setWeatherLocation(docSnapshot.data().weatherLocation);
+            });
+
+            setUserData(userDocSnapshot.data());
 
             // Recuperer les sessions
             const sessionsQuery = query(
@@ -80,8 +92,8 @@ function Hub({ db }) {
             }));
 
             // Recuperer la ville de meteo //
-            const getWeatherLocation = userDoc.data().weatherLocation;
-            setWeatherLocation(getWeatherLocation); //
+            const getWeatherLocation = userDocSnapshot.data().weatherLocation;
+            setWeatherLocation(getWeatherLocation);
 
             setSessions(sessionsData);
 
@@ -119,7 +131,14 @@ function Hub({ db }) {
       }
     });
 
-    return () => unsubscribe();
+    return () => {
+      unsubscribe();
+      if (unsubscribeUserDoc) {
+        // Check if defined
+        unsubscribeUserDoc();
+      }
+    };
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [auth.currentUser?.uid]);
 
@@ -152,18 +171,21 @@ function Hub({ db }) {
       const user = auth.currentUser;
 
       const currentDate = new Date().toISOString();
-      const threeDaysFromNow = new Date();
-      threeDaysFromNow.setDate(currentDate + 1);
+      const oneDayfromNow = new Date();
+      oneDayfromNow.setDate(oneDayfromNow.getDate() + 1);
 
       const approachingTasks = tasks.filter((task) => {
         const taskDueDate = new Date(task.dateDue);
+        console.log("Task Date Due:", task.dateDue);
         return (
           task.userId === user.uid &&
-          taskDueDate >= currentDate &&
-          taskDueDate <= threeDaysFromNow
+          taskDueDate >= new Date(currentDate) &&
+          taskDueDate <= new Date(oneDayfromNow)
         );
       });
 
+      console.log("Current date:", currentDate);
+      console.log("One day from now:", oneDayfromNow);
       for (let task of approachingTasks) {
         const existingTaskNotif = notifications.find(
           (notification) =>
