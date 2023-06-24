@@ -1,6 +1,6 @@
 # Task Pro
 
-Task management application.
+Task management application. Developped in react.js, tailwindcss.
 
 ## How to run
 
