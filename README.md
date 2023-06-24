@@ -1,4 +1,4 @@
-# Getting Started with Create React App
+# Task Pro
 
 Task management application. Developped in react.js, tailwindcss.
 
