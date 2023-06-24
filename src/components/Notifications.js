@@ -41,7 +41,7 @@ function Notifications({
   // Recuperation et affichage de la meteo
   useEffect(() => {
     const getWeatherData = async (latitude, longitude) => {
-      const apiKey = "4301ff94eb15a4ed9aa1bf9e759ce8fd";
+      const apiKey = process.env.REACT_APP_WEATHER_API_KEY;
       let url;
       if (latitude && longitude) {
         url = `https://api.openweathermap.org/data/2.5/weather?lat=${latitude}&lon=${longitude}&appid=${apiKey}&units=metric`;
