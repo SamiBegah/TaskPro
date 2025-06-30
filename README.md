@@ -12,6 +12,7 @@ Task Pro is a comprehensive task management application designed to help users o
 - **Statistics**: Track and view personal productivity statistics.
 - **User Settings**: Customize application preferences.
 - **Notifications**: Receive timely alerts and reminders.
+- **Weather API Integration**: Display real-time weather information.
 
 ## Technologies Used
 
