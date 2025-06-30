@@ -15,7 +15,7 @@ Task Pro is a comprehensive task management application designed to help users o
 
 ## Technologies Used
 
-- **Frontend**: React.js, JavaScript, HTML, CSS, Tailwind CSS.
+- **Frontend**: React.js, JavaScript, HTML5, CSS3 and Tailwind CSS.
 - **Backend**: Firebase (Authentication, Firestore Database, Hosting).
 
 ## How to run the project
